@@ -1,6 +1,37 @@
 $(document).ready(function () {
     var saveButton = $('#save');
     saveButton.on('click', function () {
+        var save = true;
+
+        var modal = $('#myModal');
+        var modalHeader = $('#myModal .modal-title');
+        var modalBody = $('#myModal .modal-body');
+
+        var dataArr = myDiagram.model.nodeDataArray;
+        for (var i = dataArr.length - 1; i >= 0; i--) {
+          if (dataArr[i].category == 'Start') {
+            var check = checkNodeLinks('Start', dataArr[i].key);
+            if (check !== true) {
+                save = false;
+                modalHeader.text('Error')
+                modalBody.text(check)
+                modal.modal('show');
+            }
+
+            
+        } 
+        if (dataArr[i].category == 'Circle') {
+            var check = checkNodeLinks('Circle', dataArr[i].key);
+            if (check !== true) {
+                save = false;
+                modalHeader.text('Error')
+                modalBody.text(check)
+                modal.modal('show');
+            }
+        } 
+    }
+
+    if (save) {
         var diagramArray = myDiagram.model.toJson();
         var project = $('.project').text();
         $.ajax({
@@ -21,13 +52,52 @@ $(document).ready(function () {
                 modalHeader.text(data.status)
                 modalBody.text(data.message)
                 modal.modal('show');
-
-                console.log(data);
-
             }
         });
-    });
-    function init() {
+    }
+});
+
+    function checkNodeLinks(Figure, key){
+        var dataArr = myDiagram.model.linkDataArray;
+        counterFrom = 0;
+        counterTo = 0;
+        if (Figure == 'Start') {
+            for (var i = dataArr.length - 1; i >= 0; i--) {
+
+                if (dataArr[i].from == key) {
+                    counterFrom++;
+                }
+            }
+            switch (counterFrom) {
+              case 0:
+              return 'All Start figures should lead to a Circle';
+              break;
+              case 1:
+              return true;
+              break;
+              default:
+              return 'All Start figures should have only one line to the Circle';
+          }
+      } 
+
+      if (Figure == 'Circle') {
+          for (var i = dataArr.length - 1; i >= 0; i--) {
+            if (dataArr[i].from == key ) {
+                counterFrom++;
+            } else if (dataArr[i].to == key) {
+                counterTo++;
+            }
+        }
+        if (counterFrom == 0 || counterTo == 0) {
+          return 'All Circle figures should be connected from input and output!';
+      } else {
+         return true;
+     }
+
+ }
+}
+
+function init() {
         if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
         var $ = go.GraphObject.make;  // for conciseness in defining templates
         myDiagram =
@@ -41,14 +111,15 @@ $(document).ready(function () {
                     "undoManager.isEnabled": true  // enable undo & redo
                 });
 
+
         // helper definitions for node templates
         function nodeStyle() {
             return [
             new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
             {
                 locationSpot: go.Spot.Center,
-                    //isShadowed: true,
-                    //shadowColor: "#888",
+                isShadowed: true,
+                shadowColor: "#888",
                     // handle mouse enter/leave events to show/hide the ports
                     mouseEnter: function (e, obj) {
                         showPorts(obj.part, true);
@@ -59,6 +130,8 @@ $(document).ready(function () {
                 }
                 ];
             }
+
+
 
         // Define a function for creating a "port" that is normally transparent.
         // The "name" is used as the GraphObject.portId, the "spot" is used to control how links connect
@@ -83,32 +156,9 @@ $(document).ready(function () {
 
         var lightText = 'whitesmoke';
 
-        myDiagram.nodeTemplateMap.add("Rectangle",  // the default category
-            $(go.Node, "Spot", nodeStyle(),
-                // the main object is a Panel that surrounds a TextBlock with a rectangular Shape
-                $(go.Panel, "Auto",
-                    $(go.Shape, "Rectangle",
-                        {fill: "#00A9C9", stroke: null},
-                        new go.Binding("figure", "figure")),
-                    $(go.TextBlock,
-                    {
-                        font: "bold 11pt Helvetica, Arial, sans-serif",
-                        stroke: lightText,
-                        margin: 8,
-                        maxSize: new go.Size(160, NaN),
-                        wrap: go.TextBlock.WrapFit,
-                        editable: true
-                    },
-                    new go.Binding("text").makeTwoWay())
-                    ),
-                // four named ports, one on each side:
-                makePort("T", go.Spot.Top, false, true),
-                makePort("L", go.Spot.Left, true, true),
-                makePort("R", go.Spot.Right, true, true),
-                makePort("B", go.Spot.Bottom, true, false)
-                ));
 
-        myDiagram.nodeTemplateMap.add("LoopLimit",  // the default category
+
+       /* myDiagram.nodeTemplateMap.add("LoopLimit",  // the default category
             $(go.Node, "Spot", nodeStyle(),
                 // the main object is a Panel that surrounds a TextBlock with a rectangular Shape
                 $(go.Panel, "Auto",
@@ -118,9 +168,9 @@ $(document).ready(function () {
                     $(go.TextBlock,
                     {
                         font: "bold 11pt Helvetica, Arial, sans-serif",
-                        stroke: lightText,
+                        stroke: '#00A9C9',
                         margin: 8,
-                        maxSize: new go.Size(160, NaN),
+                        maxSize: new go.Size(160, 50),
                         wrap: go.TextBlock.WrapFit,
                         editable: true
                     },
@@ -131,91 +181,99 @@ $(document).ready(function () {
                 makePort("L", go.Spot.Left, true, true),
                 makePort("R", go.Spot.Right, true, true),
                 makePort("B", go.Spot.Bottom, true, false)
-                ));
+                ));*/
 
-        myDiagram.nodeTemplateMap.add("Start",
-            $(go.Node, "Spot", nodeStyle(),
-                $(go.Panel, "Auto",
-                    $(go.Shape, "Triangle",
-                        {minSize: new go.Size(40, 40), fill: "#79C900", stroke: null}),
-                    $(go.TextBlock, "End",
-                        {font: "bold 11pt Helvetica, Arial, sans-serif", stroke: lightText,
-                        editable: true},
-                        new go.Binding("text").makeTwoWay())
-                    ),
+                myDiagram.nodeTemplateMap.add("Start",
+                    $(go.Node, "Spot", nodeStyle(),
+                        $(go.Panel, "Auto",
+                            $(go.Shape, "Triangle",
+                                {minSize: new go.Size(40, 40),maxSize: new go.Size(50, 40), fill: "#79C900", stroke: null}),
+                            $(go.TextBlock, "End",
+                            {
+                                font: "bold 11pt Helvetica, Arial, sans-serif",
+                                stroke: '#79C900',
+                                editable: true
+                            },
+                            new go.Binding("text").makeTwoWay()
+                            )
+                            ),
                 // three named ports, one on each side except the bottom, all input only:
-                makePort("T", go.Spot.Top, false, true),
-                makePort("L", go.Spot.Left, true, true),
-                makePort("R", go.Spot.Right, true, true),
-                makePort("B", go.Spot.Bottom, true, true)
+                makePort("T", go.Spot.Top, true, false),
+
                 ));
 
-        myDiagram.nodeTemplateMap.add("Yellowish",
-            $(go.Node, "Spot", nodeStyle(),
-                $(go.Panel, "Auto",
-                    $(go.Shape, "Rectangle", {width: "20", height: "5", margin: 4, fill: null}),
-                    $(go.TextBlock, "Start",
-                        {font: "bold 11pt Helvetica, Arial, sans-serif", stroke: "black", editable: true,},
-                        new go.Binding("text"))
-                    ),
-                // three named ports, one on each side except the top, all output only:
-                makePort("L", go.Spot.Left, true, false),
-                makePort("R", go.Spot.Right, true, false),
-                makePort("B", go.Spot.Bottom, true, false)
-                ));
-
-        myDiagram.nodeTemplateMap.add("End",
-            $(go.Node, "Spot", nodeStyle(),
-                $(go.Panel, "Auto",
-                    $(go.Shape, "Circle",
-                        {minSize: new go.Size(40, 40), fill: "#DC3C00", stroke: null}),
-                    $(go.TextBlock, "End",
-                        {font: "bold 11pt Helvetica, Arial, sans-serif", stroke: lightText, editable: true,},
-                        new go.Binding("text").makeTwoWay())
-                    ),
+                myDiagram.nodeTemplateMap.add("End",
+                    $(go.Node, "Spot", nodeStyle(),
+                        $(go.Panel, "Auto",
+                            $(go.Shape, "Circle",
+                                {minSize: new go.Size(40, 40), maxSize: new go.Size(40, 40), fill: "#DC3C00", stroke: null}),
+                            $(go.TextBlock, "End",
+                                {font: "bold 11pt Helvetica, Arial, sans-serif", stroke: '#DC3C00', editable: true,},
+                                new go.Binding("text").makeTwoWay())
+                            ),
                 // three named ports, one on each side except the bottom, all input only:
-                makePort("T", go.Spot.Top, false, true),
-                makePort("L", go.Spot.Left, false, true),
-                makePort("R", go.Spot.Right, false, true)
+                makePort("B", go.Spot.Bottom, false, true)
                 ));
 
-        myDiagram.nodeTemplateMap.add("Circle",
-            $(go.Node, "Spot", nodeStyle(),
-                $(go.Panel, "Auto",
-                    $(go.Shape, "Circle",
-                        {minSize: new go.Size(40, 40), fill: "#00A9C9", stroke: null}),
-                    $(go.TextBlock, "End",
-                        {font: "bold 11pt Helvetica, Arial, sans-serif", stroke: lightText, editable: true,},
-                        new go.Binding("text").makeTwoWay())
-                    ),
+
+                myDiagram.nodeTemplateMap.add("Circle",
+                    $(go.Node, "Spot", nodeStyle(),
+                        $(go.Panel, "Auto",
+                            $(go.Shape, "Circle",
+                                {minSize: new go.Size(50, 50),maxSize: new go.Size(50, 50), fill: "#00A9C9", stroke: null}),
+                            $(go.TextBlock, "End",
+                                {font: "bold 11pt Helvetica, Arial, sans-serif", stroke: "#00A9C9", editable: true,},
+                                new go.Binding("text").makeTwoWay())
+                            ),
                 // three named ports, one on each side except the bottom, all input only:
-                makePort("T", go.Spot.Top, false, true),
-                makePort("L", go.Spot.Left, true, true),
-                makePort("R", go.Spot.Right, true, true),
-                makePort("B", go.Spot.Bottom, true, true)
+                makePort("T", go.Spot.Top, true, false),
+                makePort("B", go.Spot.Bottom, false, true)
                 ));
 
-        myDiagram.nodeTemplateMap.add("Comment",
-            $(go.Node, "Auto", nodeStyle(),
-                $(go.Shape, "File",
-                    {fill: "#EFFAB4", stroke: null}),
-                $(go.TextBlock,
-                {
-                    margin: 5,
-                    maxSize: new go.Size(200, NaN),
-                    wrap: go.TextBlock.WrapFit,
-                    textAlign: "center",
-                    editable: true,
-                    font: "bold 12pt Helvetica, Arial, sans-serif",
-                    stroke: '#454545'
-                },
-                new go.Binding("text").makeTwoWay()),
-                makePort("T", go.Spot.Top, false, true),
-                makePort("L", go.Spot.Left, true, true),
-                makePort("R", go.Spot.Right, true, true),
-                makePort("B", go.Spot.Bottom, true, true)
+                myDiagram.nodeTemplateMap.add("Rectangle", 
+                    $(go.Node, "Spot", nodeStyle(),
+                // the main object is a Panel that surrounds a TextBlock with a rectangular Shape
+                $(go.Panel, "Auto",
+                    $(go.Shape, "Rectangle",
+                        {fill: "#00A9C9", stroke: null, maxSize: new go.Size(50, 35), minSize: new go.Size(50, 35)},
+                        new go.Binding("figure", "figure")),
+                    $(go.TextBlock,
+                    {
+                        font: "bold 11pt Helvetica, Arial, sans-serif",
+                        stroke: '#00A9C9',
+                        margin: 8,
+                        
+                        wrap: go.TextBlock.WrapFit,
+                        editable: true
+                    },
+                    new go.Binding("text").makeTwoWay())
+                    ),
+                // four named ports, one on each side:
+                makePort("T", go.Spot.Top, true, false),
+                makePort("B", go.Spot.Bottom, false, true)
+                ));
+
+               /* myDiagram.nodeTemplateMap.add("Comment",
+                    $(go.Node, "Auto", nodeStyle(),
+                        $(go.Shape, "File",
+                            {fill: "#EFFAB4", stroke: null}),
+                        $(go.TextBlock,
+                        {
+                            margin: 5,
+                            maxSize: new go.Size(200, NaN),
+                            wrap: go.TextBlock.WrapFit,
+                            textAlign: "center",
+                            editable: true,
+                            font: "bold 12pt Helvetica, Arial, sans-serif",
+                            stroke: '#454545'
+                        },
+                        new go.Binding("text").makeTwoWay()),
+                        makePort("T", go.Spot.Top, false, true),
+                        makePort("L", go.Spot.Left, true, true),
+                        makePort("R", go.Spot.Right, true, true),
+                        makePort("B", go.Spot.Bottom, true, true)
                 // no ports, because no links are allowed to connect with a comment
-                ));
+                ));*/
 
 
         // replace the default Link template in the linkTemplateMap
@@ -280,12 +338,12 @@ $(document).ready(function () {
                     "animationManager.duration": 800, // slightly longer than default (600ms) animation
                     nodeTemplateMap: myDiagram.nodeTemplateMap,  // share the templates used by myDiagram
                     model: new go.GraphLinksModel([  // specify the contents of the Palette
-                        {category: "Start", text: "Start"},
-                        {category: "Rectangle",text: "Step"},
-                        {category: "Circle",text: "Step"},
-                        {category: "LoopLimit",text: "Step"},
                         {category: "End", text: "End"},
-                        {category: "Comment", text: "Comment"}
+                        // {category: "Rectangle",text: "Step"},
+                        {category: "Circle",text: "Step"},
+                        // {category: "LoopLimit",text: "Step"},
+                        {category: "Start", text: "Start"},
+                        // {category: "Comment", text: "Comment"}
                         ])
                 });
 
@@ -299,8 +357,83 @@ $(document).ready(function () {
             window.scrollTo(x, y);
         }
 
+
         myDiagram.doFocus = customFocus;
         myPalette.doFocus = customFocus;
+
+
+
+///////////////////////////////////
+//MY FUNCTIONS
+///////////////////////////////////
+function figures_arrangement(){
+    var dataArr = myDiagram.model.nodeDataArray;
+    for (var i = dataArr.length - 1; i >= 0; i--) {
+      if (dataArr[i].category == 'Start') {
+                var node = myDiagram.findNodeForData(dataArr[i]);   // find the corresponding Node
+                var p = node.location.copy();  // make a copy of the location, a Point
+                p.y = myDiagram.viewportBounds.bottom-40;
+                node.location = p;
+            } 
+
+            if (dataArr[i].category == 'End') {
+                var node = myDiagram.findNodeForData(dataArr[i]);   // find the corresponding Node
+                var p = node.location.copy();  // make a copy of the location, a Point
+                p.y = myDiagram.viewportBounds.top+40;
+                p.x = myDiagram.viewportBounds.centerX;
+                node.location = p;
+            } 
+        }
+    } 
+
+
+
+        //ON ADDED NEW OBJECT
+        myDiagram.addDiagramListener("ExternalObjectsDropped", function (ev) {
+           var dataArr = myDiagram.model.nodeDataArray;
+
+           if (ev.subject.Ca.key.Wd.category == 'Start') {
+               var data = dataArr[dataArr.length-1];  
+               var node = myDiagram.findNodeForData(data);   
+               var p = node.location.copy(); 
+               p.y = myDiagram.viewportBounds.bottom-40;
+               node.location = p;
+           }
+
+           if (ev.subject.Ca.key.Wd.category == 'End') {
+            deleteIT = false;
+
+            for (var i = dataArr.length - 1; i >= 0; i--) {
+                if (dataArr[i].category == 'End') {
+                    if (weHaveEnd) {
+                        deleteIT = true;
+                    }
+                    var weHaveEnd = true;
+                } 
+            }
+            var data = dataArr[dataArr.length-1];  
+            var node = myDiagram.findNodeForData(data);
+
+            if (deleteIT) {
+                myDiagram.model.removeNodeData(data);
+            } else {
+               var p = node.location.copy(); 
+               p.y = myDiagram.viewportBounds.top+40;
+               p.x = myDiagram.viewportBounds.centerX;
+
+               node.location = p;
+           }
+
+       }
+
+   });
+
+        //ON RESIZE FUNCTION
+        myDiagram.addDiagramListener("ViewportBoundsChanged", function () { figures_arrangement() });
+        //ON ADDED NEW OBJECT
+        myDiagram.addDiagramListener("SelectionMoved", function () {figures_arrangement() });
+
+//////////////////////////////////
 
 
     } // end init
@@ -314,7 +447,6 @@ function showPorts(node, show) {
     });
 }
 
-
 function load() {
     var project = $('.project').text();
     $.ajax({
@@ -327,7 +459,6 @@ function load() {
             console.log(error);
         },
         success: function(data){
-            console.log(data);
             myDiagram.model = go.Model.fromJson(data);
         }
     });
