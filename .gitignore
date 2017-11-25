@@ -1,1 +1,2 @@
 .htaccess
+/functions/mysql_connect.php
